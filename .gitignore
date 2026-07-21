@@ -1,0 +1,11 @@
+# Virtual Environment
+traffic_env/
+
+# Video files and datasets
+*.mp4
+*.avi
+*.mov
+
+# Python cache
+__pycache__/
+*.py[cod]
