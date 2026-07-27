@@ -9,3 +9,9 @@ traffic_env/
 # Python cache
 __pycache__/
 *.py[cod]
+
+# Model weights
+*.pt
+
+# Logs/Outputs if any
+runs/
