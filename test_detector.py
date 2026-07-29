@@ -1,19 +1,30 @@
 import cv2
-from ultralytics import YOLO
-
-# Load a pre-trained YOLOv8 model
-model = YOLO("yolov8n.pt")
+from ultralytics import solutions
 
 # Open the video file
 video_path = "test_traffic.mp4"
 cap = cv2.VideoCapture(video_path)
 
-# Explicit check if video opened successfully
 if not cap.isOpened():
-    print(f"Error: Could not open video file '{video_path}'. Please check if it exists in the folder.")
+    print(
+        f"Error: Could not open video file '{video_path}'. Please check if it exists in the folder."
+    )
     exit()
 
-print("Video loaded successfully. Processing frames... Press 'q' in the video window to exit.")
+print(
+    "Video loaded successfully. Processing frames... Press 'q' in the video window to exit."
+)
+
+# Define a counting line coordinates [x1, y1, x2, y2] across your road view
+line_points = [(20, 400), (1200, 400)]
+
+# Initialize the Ultralytics Object Counter with the model and classes built right in
+counter = solutions.ObjectCounter(
+    show=False,
+    region=line_points,
+    classes=[2, 3, 5, 7],  # Restrict to car, motorcycle, bus, truck
+    model="yolov8n.pt",
+)
 
 while cap.isOpened():
     success, frame = cap.read()
@@ -21,16 +32,13 @@ while cap.isOpened():
         print("Video ended or cannot be read further.")
         break
 
-    # Run inference: COCO classes -> 2: car, 3: motorcycle, 5: bus, 7: truck
-    results = model(frame, classes=[2, 3, 5, 7], verbose=False)
-
-    # Visualize the detection bounding boxes on the frame
-    annotated_frame = results[0].plot()
+    # The counter handles detection, tracking, and line-crossing automatically
+    results = counter(frame)
+    annotated_frame = results.plot_im
 
     # Display the live window
-    cv2.imshow("Traffic Analyzer", annotated_frame)
+    cv2.imshow("Traffic Analyzer - Vehicle Counter", annotated_frame)
 
-    # Press 'q' on your keyboard to exit the window
     if cv2.waitKey(1) & 0xFF == ord("q"):
         print("Exiting by user request.")
         break
