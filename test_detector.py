@@ -2,7 +2,7 @@ import cv2
 from ultralytics import solutions
 
 # Open the video file
-video_path = "test_traffic.mp4"
+video_path = "test_drone_view.mp4"
 cap = cv2.VideoCapture(video_path)
 
 if not cap.isOpened():
@@ -11,20 +11,26 @@ if not cap.isOpened():
     )
     exit()
 
-print(
-    "Video loaded successfully. Processing frames... Press 'q' in the video window to exit."
-)
+# Dynamically get the actual width and height of this specific video file
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+print(f"Video Loaded Successfully. Resolution: {frame_width}x{frame_height}")
 
-# Define a counting line coordinates [x1, y1, x2, y2] across your road view
-line_points = [(20, 400), (1200, 400)]
+# Automatically place the counting line horizontally across the lower-middle part of the screen
+line_points = [
+    (int(frame_width * 0.1), int(frame_height * 0.75)),
+    (int(frame_width * 0.9), int(frame_height * 0.75)),
+]
 
-# Initialize the Ultralytics Object Counter with the model and classes built right in
+# Initialize the Ultralytics Object Counter
 counter = solutions.ObjectCounter(
     show=False,
     region=line_points,
-    classes=[2, 3, 5, 7],  # Restrict to car, motorcycle, bus, truck
+    classes=[2, 3, 5, 7],  # car, motorcycle, bus, truck
     model="yolov8n.pt",
 )
+
+print("Processing frames... Press 'q' in the video window to exit.")
 
 while cap.isOpened():
     success, frame = cap.read()
@@ -32,12 +38,14 @@ while cap.isOpened():
         print("Video ended or cannot be read further.")
         break
 
-    # The counter handles detection, tracking, and line-crossing automatically
     results = counter(frame)
     annotated_frame = results.plot_im
 
-    # Display the live window
-    cv2.imshow("Traffic Analyzer - Vehicle Counter", annotated_frame)
+    # Resize the high-res frame down so it fits completely inside your display window
+    resized_frame = cv2.resize(annotated_frame, (1280, 720))
+
+    # Display the resized live window
+    cv2.imshow("Traffic Analyzer - Vehicle Counter", resized_frame)
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
         print("Exiting by user request.")
