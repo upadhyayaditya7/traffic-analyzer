@@ -50,6 +50,69 @@ while cap.isOpened():
     results = counter(small_frame)
     annotated_frame = results.plot_im
 
+    # Extract individual class counts from the counter object securely
+    car_count = 0
+    motorcycle_count = 0
+    bus_count = 0
+    truck_count = 0
+
+    if hasattr(counter, "class_wise_count") and counter.class_wise_count:
+        car_count = counter.class_wise_count.get("car", 0)
+        motorcycle_count = counter.class_wise_count.get("motorcycle", 0)
+        bus_count = counter.class_wise_count.get("bus", 0)
+        truck_count = counter.class_wise_count.get("truck", 0)
+
+    # Draw a clean dark background box with a green border for the on-screen dashboard overlay
+    cv2.rectangle(annotated_frame, (20, 20), (320, 160), (0, 0, 0), -1)
+    cv2.rectangle(annotated_frame, (20, 20), (320, 160), (0, 255, 0), 2)
+
+    # Render live vehicle categories and totals onto the annotated video frame
+    cv2.putText(
+        annotated_frame,
+        "--- LIVE COUNTS ---",
+        (35, 48),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (0, 255, 255),
+        2,
+    )
+    cv2.putText(
+        annotated_frame,
+        f"Cars: {car_count}",
+        (35, 75),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255, 255, 255),
+        2,
+    )
+    cv2.putText(
+        annotated_frame,
+        f"2-Wheelers: {motorcycle_count}",
+        (35, 102),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255, 255, 255),
+        2,
+    )
+    cv2.putText(
+        annotated_frame,
+        f"Buses: {bus_count}",
+        (35, 128),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255, 255, 255),
+        2,
+    )
+    cv2.putText(
+        annotated_frame,
+        f"Trucks: {truck_count}",
+        (35, 153),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255, 255, 255),
+        2,
+    )
+
     cv2.imshow("Traffic Analyzer - Vehicle Counter", annotated_frame)
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
