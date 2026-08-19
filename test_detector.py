@@ -2,7 +2,7 @@ import cv2
 from ultralytics import solutions
 
 # Open the video file
-video_path = "test_side_view.mp4"
+video_path = "test_drone_view.mp4"
 cap = cv2.VideoCapture(video_path)
 
 if not cap.isOpened():
@@ -32,6 +32,10 @@ counter = solutions.ObjectCounter(
     model="yolov8n.pt",
 )
 
+# Create a resizable OpenCV window so it can scale to full screen cleanly
+window_name = "Traffic Analyzer - Vehicle Counter"
+cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+
 print("Processing frames... Press 'q' in the video window to exit.")
 
 frame_count = 0
@@ -47,6 +51,7 @@ while cap.isOpened():
     if frame_count % skip_frames != 0:
         continue
 
+    # Resize down for fast AI processing
     small_frame = cv2.resize(frame, (PROCESSING_WIDTH, PROCESSING_HEIGHT))
 
     results = counter(small_frame)
@@ -59,17 +64,15 @@ while cap.isOpened():
     truck_count = 0
 
     if hasattr(counter, "class_wise_count") and isinstance(counter.class_wise_count, dict):
-        # Ultralytics dictionary keys can sometimes be class names or IDs
         counts_dict = counter.class_wise_count
         car_count = counts_dict.get("car", counts_dict.get(2, 0))
         motorcycle_count = counts_dict.get("motorcycle", counts_dict.get(3, 0))
         bus_count = counts_dict.get("bus", counts_dict.get(5, 0))
         truck_count = counts_dict.get("truck", counts_dict.get(7, 0))
 
-    # Total tracked fallback
     total_tracked = getattr(counter, "in_count", 0) + getattr(counter, "out_count", 0)
 
-    # Draw dashboard box
+    # Draw our clean custom dashboard box on top
     cv2.rectangle(annotated_frame, (20, 20), (320, 160), (0, 0, 0), -1)
     cv2.rectangle(annotated_frame, (20, 20), (320, 160), (0, 255, 0), 2)
 
@@ -119,7 +122,10 @@ while cap.isOpened():
         2,
     )
 
-    cv2.imshow("Traffic Analyzer - Vehicle Counter", annotated_frame)
+    # Resize back up to match the original video frame size so it displays crisp at full size
+    display_frame = cv2.resize(annotated_frame, (orig_width, orig_height))
+
+    cv2.imshow(window_name, display_frame)
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
         print("Exiting by user request.")
