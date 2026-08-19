@@ -11,7 +11,6 @@ if not cap.isOpened():
     )
     exit()
 
-# Get original dimensions
 orig_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 orig_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 print(f"Original Resolution: {orig_width}x{orig_height}")
@@ -19,10 +18,13 @@ print(f"Original Resolution: {orig_width}x{orig_height}")
 PROCESSING_WIDTH = 960
 PROCESSING_HEIGHT = 540
 
-# Setting region points completely outside the frame view so the line is invisible
-line_points = [(-10, -10), (-20, -20)]
+# Place the counting line across the middle where vehicles cross it
+line_points = [
+    (int(PROCESSING_WIDTH * 0.1), int(PROCESSING_HEIGHT * 0.48)),
+    (int(PROCESSING_WIDTH * 0.9), int(PROCESSING_HEIGHT * 0.48)),
+]
 
-# Initialize the Ultralytics Object Counter with hidden line points
+# Initialize the Ultralytics Object Counter
 counter = solutions.ObjectCounter(
     show=False,
     region=line_points,
@@ -50,23 +52,27 @@ while cap.isOpened():
     results = counter(small_frame)
     annotated_frame = results.plot_im
 
-    # Extract individual class counts from the counter object securely
+    # Safely retrieve individual class counts from the counter object's dictionary
     car_count = 0
     motorcycle_count = 0
     bus_count = 0
     truck_count = 0
 
-    if hasattr(counter, "class_wise_count") and counter.class_wise_count:
-        car_count = counter.class_wise_count.get("car", 0)
-        motorcycle_count = counter.class_wise_count.get("motorcycle", 0)
-        bus_count = counter.class_wise_count.get("bus", 0)
-        truck_count = counter.class_wise_count.get("truck", 0)
+    if hasattr(counter, "class_wise_count") and isinstance(counter.class_wise_count, dict):
+        # Ultralytics dictionary keys can sometimes be class names or IDs
+        counts_dict = counter.class_wise_count
+        car_count = counts_dict.get("car", counts_dict.get(2, 0))
+        motorcycle_count = counts_dict.get("motorcycle", counts_dict.get(3, 0))
+        bus_count = counts_dict.get("bus", counts_dict.get(5, 0))
+        truck_count = counts_dict.get("truck", counts_dict.get(7, 0))
 
-    # Draw a clean dark background box with a green border for the on-screen dashboard overlay
+    # Total tracked fallback
+    total_tracked = getattr(counter, "in_count", 0) + getattr(counter, "out_count", 0)
+
+    # Draw dashboard box
     cv2.rectangle(annotated_frame, (20, 20), (320, 160), (0, 0, 0), -1)
     cv2.rectangle(annotated_frame, (20, 20), (320, 160), (0, 255, 0), 2)
 
-    # Render live vehicle categories and totals onto the annotated video frame
     cv2.putText(
         annotated_frame,
         "--- LIVE COUNTS ---",
@@ -78,7 +84,7 @@ while cap.isOpened():
     )
     cv2.putText(
         annotated_frame,
-        f"Cars: {car_count}",
+        f"Total Tracked: {total_tracked}",
         (35, 75),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,
@@ -87,7 +93,7 @@ while cap.isOpened():
     )
     cv2.putText(
         annotated_frame,
-        f"2-Wheelers: {motorcycle_count}",
+        f"Cars: {car_count}",
         (35, 102),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,
@@ -96,7 +102,7 @@ while cap.isOpened():
     )
     cv2.putText(
         annotated_frame,
-        f"Buses: {bus_count}",
+        f"2-Wheelers: {motorcycle_count}",
         (35, 128),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,
@@ -105,7 +111,7 @@ while cap.isOpened():
     )
     cv2.putText(
         annotated_frame,
-        f"Trucks: {truck_count}",
+        f"Trucks/Buses: {truck_count + bus_count}",
         (35, 153),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,
