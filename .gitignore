@@ -1,17 +1,21 @@
-# Virtual Environment
-traffic_env/
+# Python
+__pycache__/
+*. pyc
+*.egg-info/
+.build/
+venv/
+env/
+.venv/
 
-# Video files and datasets
+# Project outputs
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+runs/
 *.mp4
 *.avi
 *.mov
-
-# Python cache
-__pycache__/
-*.py[cod]
-
-# Model weights
 *.pt
-
-# Logs/Outputs if any
-runs/
+*.json
+*.csv
